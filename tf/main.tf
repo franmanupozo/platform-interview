@@ -7,14 +7,27 @@ terraform {
       version = "2.15.0"
     }
     vault = {
+      source  = "hashicorp/vault"
       version = "3.0.1"
     }
   }
 }
 
+# --- Global Providers ---
+provider "docker" {}
+
+# A dummy provider reference so we can pass providers into modules
+provider "vault" {
+  alias   = "shared"
+  address = "http://localhost:8201"
+  token   = "dummy"
+}
+
 locals {
+  # List of services
   services = ["account", "gateway", "payment"]
 
+  # Environment configuration
   environments = {
     development = {
       vault_address = "http://localhost:8201"
@@ -37,9 +50,16 @@ locals {
   }
 }
 
+# --- Development Environment ---
 module "services_dev" {
-  for_each      = toset(local.services)
-  source        = "./modules/service"
+  for_each = toset(local.services)
+  source   = "./modules/service"
+
+  providers = {
+    vault  = vault.shared
+    docker = docker
+  }
+
   service       = each.key
   environment   = "development"
   vault_address = local.environments["development"].vault_address
@@ -49,9 +69,16 @@ module "services_dev" {
   docker_image  = "form3tech-oss/platformtest-${each.key}"
 }
 
+# --- Production Environment ---
 module "services_prod" {
-  for_each      = toset(local.services)
-  source        = "./modules/service"
+  for_each = toset(local.services)
+  source   = "./modules/service"
+
+  providers = {
+    vault  = vault.shared
+    docker = docker
+  }
+
   service       = each.key
   environment   = "production"
   vault_address = local.environments["production"].vault_address
@@ -61,9 +88,16 @@ module "services_prod" {
   docker_image  = "form3tech-oss/platformtest-${each.key}"
 }
 
+# --- Staging Environment ---
 module "services_staging" {
-  for_each      = toset(local.services)
-  source        = "./modules/service"
+  for_each = toset(local.services)
+  source   = "./modules/service"
+
+  providers = {
+    vault  = vault.shared
+    docker = docker
+  }
+
   service       = each.key
   environment   = "staging"
   vault_address = local.environments["staging"].vault_address

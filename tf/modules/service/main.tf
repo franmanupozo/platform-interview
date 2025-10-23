@@ -1,8 +1,15 @@
-provider "vault" {
-  address = var.vault_address
-  token   = var.vault_token
+terraform {
+  required_providers {
+    docker = {
+      source = "kreuzwerker/docker"
+    }
+    vault = {
+      source = "hashicorp/vault"
+    }
+  }
 }
 
+# --- Vault Secrets and Policies ---
 resource "vault_generic_secret" "secret" {
   path = "secret/${var.environment}/${var.service}"
 
@@ -33,6 +40,7 @@ resource "vault_generic_endpoint" "user" {
   })
 }
 
+# --- Docker Containers ---
 resource "docker_container" "container" {
   image = var.docker_image
   name  = "${var.service}_${var.environment}"
